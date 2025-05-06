@@ -19,4 +19,31 @@ export class ChatService {
   onMessage(callback: (data: any) => void) {
     this.socket.on('receive_message', callback);
   }
+
+   uploadFile(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const arrayBuffer = reader.result as ArrayBuffer;
+      this.socket.emit('file-upload', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        data: Array.from(new Uint8Array(arrayBuffer)),
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  onUploadSuccess(callback: (fileName: string) => void) {
+    this.socket.on('upload-success', callback);
+  }
+
+  onNewFile(callback: (fileMeta: { name: string; url: string }) => void) {
+  this.socket.on('new-file', callback);
+}
+
+  onUploadError(callback: (error: string) => void) {
+    this.socket.on('upload-error', callback);
+  }
+
 }

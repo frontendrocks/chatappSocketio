@@ -1,6 +1,11 @@
 <div *ngFor="let msg of messages">
   <b>{{ msg.username }}:</b> {{ msg.message }}
 </div>
-
+<ul>
+  <li *ngFor="let file of files">
+    <a [href]="file.url" target="_blank" download>{{ file.name }}</a>
+  </li>
+</ul>
+  <input type="file" (change)="onFileSelected($event)" />
 <input [(ngModel)]="message" (keyup.enter)="sendMessage()" placeholder="Type a message..." />
 <button (click)="sendMessage()">Send</button>
