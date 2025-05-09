@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { io, Socket } from 'socket.io-client';
+import { Observable } from 'rxjs';
 
 @Injectable({
   providedIn: 'root'
@@ -9,41 +10,32 @@ export class ChatService {
   private readonly uri: string = 'http://localhost:3000';
 
   constructor() {
-    this.socket = io(this.uri);
+    this.socket = io('http://localhost:3000', {
+    transports: ['websocket'], 
+  });
   }
 
-  sendMessage(message: string, username: string) {
-    this.socket.emit('send_message', { message, username });
+  sendMessage( data: { username: string; message: string }) {
+    this.socket.emit('send_message', data);
   }
 
-  onMessage(callback: (data: any) => void) {
-    this.socket.on('receive_message', callback);
+   onMessage(): Observable<any> {
+    return new Observable(observer => {
+      this.socket.on('receive_message', (data) => observer.next(data));
+    });
   }
 
-   uploadFile(file: File) {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const arrayBuffer = reader.result as ArrayBuffer;
-      this.socket.emit('file-upload', {
-        name: file.name,
-        type: file.type,
-        size: file.size,
-        data: Array.from(new Uint8Array(arrayBuffer)),
-      });
-    };
-    reader.readAsArrayBuffer(file);
+  onImageMessage(): Observable<any> {
+    return new Observable(observer => {
+      this.socket.on('image_message', (data) => observer.next(data));
+    });
   }
 
-  onUploadSuccess(callback: (fileName: string) => void) {
-    this.socket.on('upload-success', callback);
-  }
+  // onMessage(callback: (data: any) => void) {
+  //   this.socket.on('receive_message', callback);
+  // }
 
-  onNewFile(callback: (fileMeta: { name: string; url: string }) => void) {
-  this.socket.on('new-file', callback);
-}
 
-  onUploadError(callback: (error: string) => void) {
-    this.socket.on('upload-error', callback);
-  }
 
+ 
 }

@@ -2,10 +2,7 @@ const express = require('express');
 const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
-
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const axios = require('axios');
 
 const app = express();
 app.use(cors());
@@ -15,44 +12,62 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: "*",  // use specific origin for production
-    methods: ["GET", "POST"]
-  }
+    methods: ["GET", "POST"],
+    credentials: true
+  },
+  transports: ['websocket', 'polling']
 });
 
-const upload = multer({ dest: 'uploads/' });
+async function getUnsplashImage(term) {
+  try {
+    const response = await axios.get('https://api.unsplash.com/search/photos', {
+      headers: {
+        Authorization: "Client-ID dfdf"
+      },
+      params: {
+        query: term,
+        per_page: 1
+      }
+    });
+
+    const results = response.data.results;
+    if (results.length > 0) {
+      return results[0].urls.regular;
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('Unsplash API Error:', error.message);
+    return null;
+  }
+}
 
 io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
-  socket.on('send_message', (data) => {
+  socket.on('send_message', async (data) => {
     console.log(data);
-    socket.broadcast.emit('receive_message', data);
-  });
-  socket.on('file-upload', (fileData) => {
-    const buffer = Buffer.from(fileData.data);
-    const filePath = path.join(__dirname, 'uploads', fileData.name);
+    
+    console.log('Message received:', data);
 
-    fs.writeFile(filePath, buffer, (err) => {
-      if (err) {
-        console.error('File save error:', err);
-        socket.emit('upload-error', 'Failed to save file');
-      } else {
-        console.log(`File ${fileData.name} saved`);
-        socket.emit('upload-success', fileData.name);
-        socket.broadcast.emit('new-file', {
-        name: fileData.name,
-        url: `http://localhost:3000/uploads/${fileData.name}`,
+    // Step 1: Broadcast the message to all other clients
+    socket.broadcast.emit('receive_message', data);
+
+    // Step 2: Check API if the message matches a prompt
+    const imageUrl = await getUnsplashImage(data.message);
+    if (imageUrl) {
+      io.emit('image_message', {
+        user: 'Bot',
+        prompt: data.message,
+        url: imageUrl
       });
-      }
-    });
+    }
   });
 
   socket.on('disconnect', () => {
     console.log(`User disconnected: ${socket.id}`);
   });
 });
-
-
 
 
 

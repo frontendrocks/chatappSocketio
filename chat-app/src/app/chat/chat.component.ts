@@ -1,5 +1,4 @@
 import { Component, OnInit } from '@angular/core';
-// import { SocketService } from '../chat.service';
 import { ChatService } from '../chat.service';
 import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
@@ -16,41 +15,42 @@ export class ChatComponent implements OnInit {
   messages: any[] = [];
   username = 'User' + Math.floor(Math.random() * 1000);
   
-  files: { name: string; url: string }[] = [];
+  
   constructor(private socketService: ChatService) {
-    this.socketService.onNewFile((fileMeta) => {
-    this.files.push(fileMeta);
-  });
+   
   }
 
   ngOnInit(): void {
-    this.socketService.onMessage((data: any) => {
+     this.socketService.onMessage().subscribe((data) => {
       this.messages.push(data);
     });
-     this.socketService.onUploadSuccess((fileName) => {
-      this.message = `Upload successful: ${fileName}`;
+
+     this.socketService.onImageMessage().subscribe((imgData) => {
+      this.messages.push({
+        username: imgData.username,
+        message: imgData.prompt,
+        imageUrl: imgData.url
+      });
     });
 
-    this.socketService.onUploadError((error) => {
-      this.message = `Upload failed: ${error}`;
-    });
   }
 
-   onFileSelected(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0];
-    if (file) {
-      this.socketService.uploadFile(file);
-      this.message = 'Uploading...';
-    }
-  }
-
-  sendMessage(): void {
+  sendMessage() {
     if (this.message.trim()) {
-      this.messages.push({ message: this.message, username: this.username });
-      this.socketService.sendMessage(this.message, this.username);
+      const msg = { username: this.username, message: this.message };
+      this.messages.push(msg); // Show immediately for sender
+      this.socketService.sendMessage(msg);
       this.message = '';
     }
   }
+
+  // sendMessage(): void {
+  //   if (this.message.trim()) {
+  //     this.messages.push({ message: this.message, username: this.username });
+  //     this.socketService.sendMessage(this.message, this.username);
+  //     this.message = '';
+  //   }
+  // }
 
  
 }
