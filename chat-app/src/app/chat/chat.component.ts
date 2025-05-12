@@ -25,12 +25,8 @@ export class ChatComponent implements OnInit {
       this.messages.push(data);
     });
 
-     this.socketService.onImageMessage().subscribe((imgData) => {
-      this.messages.push({
-        username: imgData.username,
-        message: imgData.prompt,
-        imageUrl: imgData.url
-      });
+  this.socketService.onBotResponse().subscribe((data: any) => {
+      this.messages.push({ user: data.user, message: data.answer });
     });
 
   }
