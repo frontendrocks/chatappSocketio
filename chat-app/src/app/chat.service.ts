@@ -19,6 +19,14 @@ export class ChatService {
     this.socket.emit('send_message', data);
   }
 
+  onBotResponse(): Observable<any> {
+    return new Observable(observer => {
+      this.socket.on('bot_response', data => {
+        observer.next(data);
+      });
+    });
+  }
+
    onMessage(): Observable<any> {
     return new Observable(observer => {
       this.socket.on('receive_message', (data) => observer.next(data));
